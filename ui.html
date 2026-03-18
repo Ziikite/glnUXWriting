@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>GLN UX 톤 적용하기</title>
+    <style>
+      :root {
+        --background: #0f172a;
+        --foreground: #e5e7eb;
+        --muted: #1f2937;
+        --muted-foreground: #9ca3af;
+        --accent: #111827;
+        --border: #374151;
+        --primary: #8358ff;
+        --primary-hover: #9775ff;
+        --primary-foreground: #f9fafb;
+        --destructive: #b91c1c;
+        --warn-bg: rgba(234, 179, 8, 0.12);
+        --warn-border: rgba(234, 179, 8, 0.4);
+        --warn-text: #fbbf24;
+        --term-bg: rgba(249, 115, 22, 0.12);
+        --term-border: rgba(249, 115, 22, 0.4);
+        --term-text: #fb923c;
+        --period-bg: rgba(59, 130, 246, 0.12);
+        --period-border: rgba(59, 130, 246, 0.4);
+        --period-text: #60a5fa;
+        --radius: 0.5rem;
+        --shadow-soft: 0 10px 15px -3px rgb(15 23 42 / 0.5), 0 4px 6px -4px rgb(15 23 42 / 0.5);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        padding: 10px;
+        font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+        font-size: 12px;
+        background: radial-gradient(circle at top, #020617, #020617 40%, #000 100%);
+        color: var(--foreground);
+      }
+
+      .card {
+        border-radius: var(--radius);
+        background: linear-gradient(145deg, rgba(15,23,42,0.96), rgba(15,23,42,0.9));
+        border: 1px solid rgba(148,163,184,0.22);
+        box-shadow: var(--shadow-soft);
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      /* ── Header ── */
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .header-left { display: flex; align-items: center; gap: 8px; }
+
+      .gln-mark {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--primary);
+        letter-spacing: 0.05em;
+      }
+
+      .card-title {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #e5e7eb;
+      }
+
+      .badge {
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 10px;
+        border: 1px solid rgba(131,88,255,0.5);
+        color: #c7d2fe;
+        background: rgba(131,88,255,0.18);
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .badge-dot {
+        width: 5px; height: 5px;
+        border-radius: 50%;
+        background: #22c55e;
+        box-shadow: 0 0 0 3px rgba(34,197,94,0.25);
+      }
+
+      /* ── Toolbar ── */
+      .toolbar { display: flex; gap: 6px; }
+
+      .btn {
+        appearance: none;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        padding: 5px 12px;
+        font-size: 11px;
+        line-height: 1.2;
+        display: inline-flex; align-items: center; justify-content: center;
+        gap: 5px;
+        cursor: pointer;
+        background: radial-gradient(circle at top left, #111827, #020617);
+        color: var(--foreground);
+        transition: background 120ms, border-color 120ms, transform 80ms, box-shadow 80ms;
+        box-shadow: 0 0 0 1px rgba(15,23,42,0.75), 0 4px 8px rgba(15,23,42,0.75);
+      }
+
+      .btn:hover {
+        background: radial-gradient(circle at top left, #1e293b, #020617);
+        border-color: rgba(131,88,255,0.8);
+        box-shadow: 0 0 0 1px rgba(131,88,255,0.6), 0 8px 16px rgba(15,23,42,0.9);
+        transform: translateY(-0.5px);
+      }
+
+      .btn:active { transform: translateY(0.5px) scale(0.99); }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #8358ff, #5b21b6);
+        border-color: rgba(131,88,255,0.9);
+        color: #fff;
+      }
+
+      .btn-primary:hover { background: linear-gradient(135deg, #9775ff, #6d28d9); }
+
+      .btn-ghost {
+        background: transparent;
+        border-color: rgba(75,85,99,0.9);
+        color: var(--muted-foreground);
+      }
+
+      .btn-ghost:hover { background: rgba(15,23,42,0.8); }
+
+      /* ── Summary grid ── */
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5px;
+      }
+
+      .summary-item {
+        border-radius: 7px;
+        background: rgba(31,41,55,0.6);
+        border: 1px solid rgba(55,65,81,0.8);
+        padding: 6px 7px;
+      }
+
+      .summary-label { font-size: 9px; color: var(--muted-foreground); margin-bottom: 2px; }
+      .summary-value { font-size: 12px; font-weight: 700; color: #e5e7eb; }
+      .summary-value.warn { color: var(--warn-text); }
+      .summary-value.term { color: var(--term-text); }
+      .summary-value.period { color: var(--period-text); }
+
+      /* ── Keyword pills ── */
+      .summary-pill-row { display: flex; flex-wrap: wrap; gap: 4px; }
+
+      .pill {
+        border-radius: 999px;
+        padding: 2px 7px;
+        font-size: 10px;
+        border: 1px solid rgba(75,85,99,0.7);
+        color: var(--muted-foreground);
+        background: rgba(15,23,42,0.9);
+        white-space: nowrap;
+      }
+
+      /* ── Node list ── */
+      .list {
+        border-radius: 8px;
+        background: rgba(15,23,42,0.97);
+        border: 1px solid rgba(31,41,55,0.95);
+        max-height: 248px;
+        overflow: hidden auto;
+      }
+
+      .list-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 7px;
+        padding: 7px 8px;
+        border-bottom: 1px solid rgba(31,41,55,0.9);
+      }
+
+      .list-item:last-child { border-bottom: none; }
+
+      .checkbox { margin-top: 3px; flex-shrink: 0; accent-color: var(--primary); }
+
+      .text-block { flex: 1; min-width: 0; }
+
+      .text-label {
+        font-size: 10px;
+        color: var(--muted-foreground);
+        margin-bottom: 3px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .node-name { font-weight: 500; }
+
+      .no-change-badge {
+        font-size: 9px;
+        padding: 1px 5px;
+        border-radius: 999px;
+        background: rgba(75,85,99,0.3);
+        border: 1px solid rgba(75,85,99,0.5);
+        color: var(--muted-foreground);
+      }
+
+      .text-original, .text-suggested {
+        font-size: 11px;
+        line-height: 1.5;
+        padding: 4px 7px;
+        border-radius: 6px;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .text-original {
+        background: rgba(15,23,42,0.9);
+        border: 1px solid rgba(55,65,81,0.8);
+        color: #9ca3af;
+      }
+
+      .text-suggested {
+        margin-top: 3px;
+        background: linear-gradient(135deg, rgba(131,88,255,0.18), rgba(15,23,42,0.95));
+        border: 1px solid rgba(131,88,255,0.75);
+        color: #e5e7eb;
+      }
+
+      .text-same {
+        margin-top: 3px;
+        background: rgba(15,23,42,0.6);
+        border: 1px dashed rgba(55,65,81,0.6);
+        color: #6b7280;
+        font-size: 10px;
+      }
+
+      /* ── Issue tags ── */
+      .issues-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px;
+        margin-top: 4px;
+      }
+
+      .issue-tag {
+        font-size: 9px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        max-width: 100%;
+      }
+
+      .tag-term {
+        background: var(--term-bg);
+        border: 1px solid var(--term-border);
+        color: var(--term-text);
+      }
+
+      .tag-period {
+        background: var(--period-bg);
+        border: 1px solid var(--period-border);
+        color: var(--period-text);
+      }
+
+      .tag-jargon {
+        background: var(--warn-bg);
+        border: 1px solid var(--warn-border);
+        color: var(--warn-text);
+      }
+
+      .tag-rule {
+        background: rgba(131,88,255,0.14);
+        border: 1px solid rgba(131,88,255,0.35);
+        color: #a78bfa;
+      }
+
+      /* ── Footer ── */
+      .footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        padding-top: 2px;
+        border-top: 1px solid rgba(55,65,81,0.5);
+      }
+
+      .status-text {
+        font-size: 10px;
+        color: var(--muted-foreground);
+        flex: 1;
+        line-height: 1.4;
+      }
+
+      /* ── GLN Standards legend ── */
+      .legend {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding: 5px 0;
+        border-top: 1px solid rgba(55,65,81,0.4);
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 9px;
+        color: var(--muted-foreground);
+      }
+
+      .legend-dot {
+        width: 6px; height: 6px;
+        border-radius: 2px;
+        flex-shrink: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+
+      <!-- Header -->
+      <div class="card-header">
+        <div class="header-left">
+          <span class="gln-mark">●GLN</span>
+          <span class="card-title">UX 톤 적용하기</span>
+        </div>
+        <div class="badge">
+          <span class="badge-dot"></span>
+          v1.0 Standards
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <button id="analyze-btn" class="btn btn-ghost" type="button">분석하기</button>
+        <button id="apply-btn" class="btn btn-primary" type="button">톤 적용하기</button>
+      </div>
+
+      <!-- Summary -->
+      <div class="summary-grid">
+        <div class="summary-item">
+          <div class="summary-label">텍스트 노드</div>
+          <div id="summary-nodes" class="summary-value">-</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">용어 이슈</div>
+          <div id="summary-terms" class="summary-value term">-</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">마침표 이슈</div>
+          <div id="summary-periods" class="summary-value period">-</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">문장 타입</div>
+          <div id="summary-sentences" class="summary-value" style="font-size:10px;">-</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">감정 톤</div>
+          <div id="summary-emotion" class="summary-value" style="font-size:10px;">-</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">전문용어</div>
+          <div id="summary-jargon" class="summary-value warn">-</div>
+        </div>
+      </div>
+
+      <!-- Keyword pills -->
+      <div id="summary-keywords" class="summary-pill-row"></div>
+
+      <!-- GLN Standards legend -->
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:rgba(131,88,255,0.7)"></div>톤 교정
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--term-text)"></div>용어 이슈
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--period-text)"></div>마침표
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--warn-text)"></div>한자어/전문용어
+        </div>
+      </div>
+
+      <!-- Node list -->
+      <div id="list" class="list"></div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <div id="status" class="status-text">텍스트를 선택한 뒤 분석을 실행해 주세요.</div>
+        <button id="select-all-btn" class="btn btn-ghost" type="button">전체 선택/해제</button>
+      </div>
+
+    </div>
+
+    <script>
+      let currentAnalysis = null;
+      let selectionMap = new Map();
+      let lastSelectAllState = true;
+
+      const analyzeBtn     = document.getElementById('analyze-btn');
+      const applyBtn       = document.getElementById('apply-btn');
+      const selectAllBtn   = document.getElementById('select-all-btn');
+      const statusEl       = document.getElementById('status');
+      const listEl         = document.getElementById('list');
+      const summaryNodesEl    = document.getElementById('summary-nodes');
+      const summaryTermsEl    = document.getElementById('summary-terms');
+      const summaryPeriodsEl  = document.getElementById('summary-periods');
+      const summarySentencesEl = document.getElementById('summary-sentences');
+      const summaryEmotionEl  = document.getElementById('summary-emotion');
+      const summaryJargonEl   = document.getElementById('summary-jargon');
+      const summaryKeywordsEl = document.getElementById('summary-keywords');
+
+      function setStatus(text) { statusEl.textContent = text; }
+      function postToPlugin(msg) { parent.postMessage({ pluginMessage: msg }, '*'); }
+
+      // ── Summary 렌더 ──
+      function renderSummary(summary) {
+        if (!summary) {
+          summaryNodesEl.textContent = '-';
+          summaryTermsEl.textContent = '-';
+          summaryPeriodsEl.textContent = '-';
+          summarySentencesEl.textContent = '-';
+          summaryEmotionEl.textContent = '-';
+          summaryJargonEl.textContent = '-';
+          summaryKeywordsEl.innerHTML = '';
+          return;
+        }
+
+        summaryNodesEl.textContent = String(summary.totalNodes);
+        summaryTermsEl.textContent = String(summary.totalTerminologyIssues || 0);
+        summaryPeriodsEl.textContent = String(summary.totalPeriodIssues || 0);
+        summaryJargonEl.textContent = String(summary.totalJargonWarnings || 0);
+
+        const sc = summary.sentenceTypeCount || {};
+        const sentenceParts = [];
+        if (sc.declarative) sentenceParts.push(`서술 ${sc.declarative}`);
+        if (sc.imperative)  sentenceParts.push(`명령 ${sc.imperative}`);
+        if (sc.interrogative) sentenceParts.push(`의문 ${sc.interrogative}`);
+        summarySentencesEl.textContent = sentenceParts.join(' · ') || '-';
+
+        const ec = summary.emotionCount || {};
+        const emotionMap = {
+          friendly: '친근', professional: '격식', neutral: '중립',
+          enthusiastic: '열정', playful: '발랄',
+        };
+        const emotionParts = [];
+        Object.entries(emotionMap).forEach(([key, label]) => {
+          if (ec[key]) emotionParts.push(`${label} ${ec[key]}`);
+        });
+        summaryEmotionEl.textContent = emotionParts.join(' · ') || '-';
+
+        summaryKeywordsEl.innerHTML = '';
+        (summary.topKeywords || []).slice(0, 8).forEach((kw) => {
+          const pill = document.createElement('div');
+          pill.className = 'pill';
+          pill.textContent = `${kw.word} · ${kw.count}`;
+          summaryKeywordsEl.appendChild(pill);
+        });
+      }
+
+      // ── Node list 렌더 ──
+      function renderList(analysis) {
+        listEl.innerHTML = '';
+        selectionMap = new Map();
+
+        if (!analysis || !analysis.nodes || !analysis.nodes.length) {
+          const empty = document.createElement('div');
+          empty.className = 'list-item';
+          empty.style.color = '#6b7280';
+          empty.textContent = '선택된 텍스트가 없거나 분석 결과가 없어요.';
+          listEl.appendChild(empty);
+          return;
+        }
+
+        analysis.nodes.forEach((node) => {
+          const hasChange = node.originalText !== node.suggestedText;
+          selectionMap.set(node.nodeId, hasChange);
+
+          const item = document.createElement('div');
+          item.className = 'list-item';
+
+          // Checkbox
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.className = 'checkbox';
+          checkbox.checked = hasChange;
+          checkbox.addEventListener('change', () => {
+            selectionMap.set(node.nodeId, checkbox.checked);
+          });
+
+          // Text block
+          const textBlock = document.createElement('div');
+          textBlock.className = 'text-block';
+
+          // Label row
+          const label = document.createElement('div');
+          label.className = 'text-label';
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'node-name';
+          nameSpan.textContent = node.name || 'Text Node';
+          label.appendChild(nameSpan);
+          if (!hasChange) {
+            const badge = document.createElement('span');
+            badge.className = 'no-change-badge';
+            badge.textContent = '변경 없음';
+            label.appendChild(badge);
+          }
+
+          // Original text
+          const original = document.createElement('div');
+          original.className = 'text-original';
+          original.textContent = node.originalText || ' ';
+
+          // Suggested text
+          const suggested = document.createElement('div');
+          if (hasChange) {
+            suggested.className = 'text-suggested';
+            suggested.textContent = node.suggestedText || ' ';
+          } else {
+            suggested.className = 'text-original text-same';
+            suggested.textContent = '✓ GLN 톤 기준 충족';
+          }
+
+          // Issues row
+          const issuesRow = document.createElement('div');
+          issuesRow.className = 'issues-row';
+
+          // 1) 적용된 규칙 수
+          if (node.appliedRuleIds && node.appliedRuleIds.length) {
+            const tag = document.createElement('div');
+            tag.className = 'issue-tag tag-rule';
+            tag.textContent = `✦ 규칙 ${node.appliedRuleIds.length}개 적용`;
+            issuesRow.appendChild(tag);
+          }
+
+          // 2) 용어 이슈 (GLN 서비스 용어집)
+          if (node.terminologyIssues && node.terminologyIssues.length) {
+            node.terminologyIssues.forEach((issue) => {
+              const tag = document.createElement('div');
+              tag.className = 'issue-tag tag-term';
+              tag.title = `[${issue.category}] "${issue.deprecated}" → "${issue.approved}"`;
+              tag.textContent = `⚑ ${issue.deprecated} → ${issue.approved}`;
+              issuesRow.appendChild(tag);
+            });
+          }
+
+          // 3) 마침표 이슈
+          if (node.periodIssue) {
+            const tag = document.createElement('div');
+            tag.className = 'issue-tag tag-period';
+            tag.title = node.periodIssue.description;
+            tag.textContent = node.periodIssue.type === 'unnecessary_period'
+              ? '· 마침표 생략 권장'
+              : '· 마침표 사용 권장';
+            issuesRow.appendChild(tag);
+          }
+
+          // 4) 전문용어 / 한자어
+          if (node.jargonWarnings && node.jargonWarnings.length) {
+            node.jargonWarnings.forEach((term) => {
+              const tag = document.createElement('div');
+              tag.className = 'issue-tag tag-jargon';
+              tag.textContent = `⚠ ${term}`;
+              issuesRow.appendChild(tag);
+            });
+          }
+
+          textBlock.appendChild(label);
+          textBlock.appendChild(original);
+          textBlock.appendChild(suggested);
+          if (issuesRow.children.length) textBlock.appendChild(issuesRow);
+
+          item.appendChild(checkbox);
+          item.appendChild(textBlock);
+          listEl.appendChild(item);
+        });
+      }
+
+      // ── Event listeners ──
+      analyzeBtn.addEventListener('click', () => {
+        setStatus('선택된 텍스트를 분석하고 있어요…');
+        postToPlugin({ type: 'analyze' });
+      });
+
+      applyBtn.addEventListener('click', () => {
+        if (!currentAnalysis || !currentAnalysis.nodes) {
+          setStatus('먼저 분석을 실행해 주세요.');
+          return;
+        }
+
+        const targets = [];
+        currentAnalysis.nodes.forEach((node) => {
+          if (selectionMap.get(node.nodeId)) {
+            targets.push({ nodeId: node.nodeId, newText: node.suggestedText });
+          }
+        });
+
+        if (!targets.length) {
+          setStatus('적용할 항목이 선택되지 않았어요.');
+          return;
+        }
+
+        setStatus('선택한 텍스트에 GLN UX 톤을 적용하고 있어요…');
+        postToPlugin({ type: 'apply', payload: { targets } });
+      });
+
+      selectAllBtn.addEventListener('click', () => {
+        if (!currentAnalysis || !currentAnalysis.nodes) return;
+        lastSelectAllState = !lastSelectAllState;
+        selectionMap.forEach((_v, key) => selectionMap.set(key, lastSelectAllState));
+        listEl.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+          cb.checked = lastSelectAllState;
+        });
+      });
+
+      // ── Plugin → UI 메시지 수신 ──
+      window.onmessage = (event) => {
+        const msg = event.data.pluginMessage;
+        if (!msg) return;
+
+        if (msg.type === 'analysis-result') {
+          currentAnalysis = msg.payload;
+          renderSummary(currentAnalysis.summary);
+          renderList(currentAnalysis);
+          const s = currentAnalysis.summary;
+          const issueCount = (s.totalTerminologyIssues || 0)
+            + (s.totalPeriodIssues || 0)
+            + (s.totalJargonWarnings || 0);
+          setStatus(
+            issueCount > 0
+              ? `분석 완료 · GLN 기준 이슈 ${issueCount}건 발견됐어요. 적용할 항목을 선택해 주세요.`
+              : '분석 완료 · 적용할 항목을 선택해 주세요.'
+          );
+        } else if (msg.type === 'error') {
+          setStatus(msg.message || '오류가 발생했어요.');
+        } else if (msg.type === 'info') {
+          setStatus(msg.message || '');
+        }
+      };
+
+      // 패널 열릴 때 자동 분석 시도
+      postToPlugin({ type: 'analyze' });
+    </script>
+  </body>
+</html>
