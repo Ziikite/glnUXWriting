@@ -271,24 +271,21 @@ function collectTextNodes(node, result) {
 }
 
 /**
- * [APPLY BUG FIX] mixed font 노드 폰트 수집
+ * [PERF FIX] getStyledTextSegments로 폰트 수집
  *
- * 기존 버그: fontName === figma.mixed 이면 로드·적용 모두 skip
- * → Figma 실 디자인 노드의 대부분이 mixed font → 아무것도 안 바뀜
- *
- * 수정: getRangeFontName()으로 각 글자 범위 폰트를 수집해 전부 로드
- * hasMissingFont인 경우에만 skip (mixed는 skip 안 함)
+ * 기존: getRangeFontName(i, i+1) 글자 단위 반복 → 노드당 수백 번 호출 → 느림
+ * 수정: getStyledTextSegments 한 번 호출로 세그먼트 단위 수집 → 빠름
+ * hasMissingFont인 경우에만 skip
  */
-async function getNodeFonts(node) {
+function getNodeFonts(node) {
   if (node.hasMissingFont) return [];
   const fontSet = new Set();
   if (node.fontName !== figma.mixed) {
     fontSet.add(JSON.stringify(node.fontName));
   } else {
-    const len = node.characters.length;
-    for (let i = 0; i < len; i++) {
-      const font = node.getRangeFontName(i, i + 1);
-      if (font !== figma.mixed) fontSet.add(JSON.stringify(font));
+    const segments = node.getStyledTextSegments(['fontName']);
+    for (const seg of segments) {
+      if (seg.fontName) fontSet.add(JSON.stringify(seg.fontName));
     }
   }
   return [...fontSet].map(s => JSON.parse(s));
@@ -298,8 +295,7 @@ async function loadFontsForNodes(nodes) {
   const allFonts = new Set();
   for (const node of nodes) {
     if (node.hasMissingFont) continue;
-    const fonts = await getNodeFonts(node);
-    fonts.forEach(f => allFonts.add(JSON.stringify(f)));
+    getNodeFonts(node).forEach(f => allFonts.add(JSON.stringify(f)));
   }
   await Promise.all([...allFonts].map(s => figma.loadFontAsync(JSON.parse(s))));
 }
